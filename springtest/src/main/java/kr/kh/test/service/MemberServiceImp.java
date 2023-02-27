@@ -1,0 +1,146 @@
+package kr.kh.test.service;
+
+import java.util.regex.Pattern;
+
+import javax.mail.internet.MimeMessage;
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import kr.kh.test.dao.MemberDAO;
+import kr.kh.test.vo.MemberOKVO;
+import kr.kh.test.vo.MemberVO;
+
+@Service
+public class MemberServiceImp implements MemberService {
+
+	String contextPath = "/test";
+	
+	@Autowired
+	private JavaMailSender mailSender;
+	
+	@Autowired
+	MemberDAO memberDao;
+	
+	
+	
+	@Autowired
+	BCryptPasswordEncoder passwordEncoder;
+	
+	public void bcrypt(MemberVO member) {		
+		String pw = member.getMe_pw();
+		String encpw = passwordEncoder.encode(pw);
+		member.setMe_pw(encpw);		
+	};
+	
+	@Override
+	public boolean signup(MemberVO member) {
+		if(member ==null) return false;
+		
+		String idRegex = "^[a-zA-Z][a-zA-Z0-9!@#$]{4,12}$";
+		String pwRegex = "^[a-zA-Z0-9!@#$]{8,20}$";
+		if(member.getMe_id() == null || !Pattern.matches(idRegex, member.getMe_id())) return false;		
+		if(member.getMe_pw() == null || !Pattern.matches(pwRegex, member.getMe_pw())) return false;
+		bcrypt(member);
+		if(member.getMe_email()== null) return false;		
+		if(member.getMe_birthday() ==null) return false;		
+		boolean isSignup = memberDao.insertMember(member) !=0;
+		//회원가입에 실패하면 이메일 인증 메일을 보낼 필요가 없슴
+		if(isSignup == false) return false;
+		//이메일 인증
+		//랜덤으로 6자리 문자열 생성
+		String randomStr = createRandom(6);
+		//memberOKVO 객체 생성
+		MemberOKVO mok = new MemberOKVO(member.getMe_id(), randomStr);
+		//memberOKVO DB에 저장
+		memberDao.insertMemberOK(mok);
+		String title= "이 편지는 BC 400 카이사르 왕의 사후로부터 시작되었으며...";
+		
+		String content = "절대 이편지를 무시해서는 안됩니다. 그랬다간 큰 일이 일어나고 말 것이며...<a href='"+getHref(mok)+"'>[결제하여 상세보기]</a>";
+		sendEmail(title,content,member.getMe_email());
+		//이메일 전송
+		return true;
+	}
+	private void sendEmail(String title, String content, String me_email) {
+		 String setfrom = "sakulavi0113@gmail.com";         
+
+		    try {
+		        MimeMessage message = mailSender.createMimeMessage();
+		        MimeMessageHelper messageHelper 
+		            = new MimeMessageHelper(message, true, "UTF-8");
+
+		        messageHelper.setFrom(setfrom);  // 보내는사람 생략하거나 하면 정상작동을 안함
+		        messageHelper.setTo(me_email);     // 받는사람 이메일
+		        messageHelper.setSubject(title); // 메일제목은 생략이 가능하다
+		        messageHelper.setText(content, true);  // 메일 내용
+
+		        mailSender.send(message);
+		    } catch(Exception e){
+		        System.out.println(e);
+		    }
+
+		
+	}
+
+	private String getHref(MemberOKVO mok) {
+		String href = "http://localhost:8080"+contextPath+"/email/authentication?mo_me_id="
+		+mok.getMo_me_id()+"&mo_num="+mok.getMo_num();
+		return href;
+	}
+
+	private String createRandom(int size) {
+		String pattern = "0123456789abcdefghizklmnopqrstuvwxyzABCDEFGHIZKLMNOPQRSTUVWXYZ";
+		int min = 0, max =pattern.length()-1;
+		String randomStr = "";
+		while(randomStr.length() < size) {
+			int r = (int)(Math.random()*(max-min+1)+min);
+			randomStr += pattern.charAt(r);
+		}
+		return randomStr;
+	}
+
+	@Override
+	public MemberVO login(MemberVO member) {
+		if(member ==null) return null;
+		String idRegex = "^[a-zA-Z][a-zA-Z0-9!@#$]{4,12}$";
+		String pwRegex = "^[a-zA-Z0-9!@#$]{8,20}$";
+		if(member.getMe_id() == null || !Pattern.matches(idRegex, member.getMe_id())) return null;		
+		if(member.getMe_pw() == null || !Pattern.matches(pwRegex, member.getMe_pw())) return null;
+		//아이디와 일치하는 회원 정보를 가져옴
+		MemberVO user = memberDao.selectMemberById(member.getMe_id());
+		if(user==null) return null;
+		//입력한 비번과 암호화된 비밀번호의 일치 여부를 확인
+		if(passwordEncoder.matches( member.getMe_pw(),user.getMe_pw())) return user;
+		
+		return null;
+		
+	}
+
+
+
+
+	@Override
+	public boolean emailAuthentication(MemberOKVO mok) {
+		//매개변수 체크
+		if(mok== null || mok.getMo_me_id() == null || mok.getMo_num() ==null) return false;
+		System.out.println("매개변수체크 성공");
+		//아이디, 인증번호를 이용하여 삭제시켜서 삭제된 갯수를 받아옴
+		int delCount= memberDao.deleteMemberOK(mok);
+		System.out.println("삭제성공");
+		//삭제 실패 : 시간 만료 or 경로
+		if(delCount == 0) return false;
+			
+		//인증성공
+		//회원 등급 권한 상승
+		int updateCount = memberDao.updateMemberAuthority(mok.getMo_me_id(), 1);
+		System.out.println("업데이트성공");
+		return updateCount != 0;
+	}
+
+
+
+}
