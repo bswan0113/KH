@@ -13,7 +13,7 @@ public class MemberVO {
 	String me_id;
 	String me_pw;
 	String me_email;
-	@DateTimeFormat(pattern ="yyyy-MM-dd")
+	@DateTimeFormat(pattern = "yyyy-MM-dd")
 	Date me_birthday;
 	int me_authority;
 	Date me_join_time;
