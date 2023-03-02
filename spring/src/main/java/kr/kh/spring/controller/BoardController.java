@@ -153,5 +153,25 @@ public class BoardController {
 			
 		}
 		return mv;
+	}	@RequestMapping(value = "/board/update/{bo_num}", method=RequestMethod.POST)
+	public ModelAndView boardUpdatePost(ModelAndView mv,
+			HttpSession session,
+			@PathVariable("bo_num")int bo_num,
+			HttpServletResponse response,
+			BoardVO board, 
+			MultipartFile files[],
+			int []fileNums) {
+		MemberVO user = (MemberVO)session.getAttribute("user");
+		if(boardService.updateBoard(board,files,fileNums,user)) {
+			MessageUtils.alertAndMovePage(response, 
+					"수정완료.", "/spring", 
+					"/board/detail/"+bo_num);
+		}else{
+			MessageUtils.alertAndMovePage(response, 
+					"수정실패.", "/spring", 
+					"/board/list");
+		};
+	mv.setViewName("redirect:/board/detail/"+bo_num);
+		return mv;
 	}
 }
