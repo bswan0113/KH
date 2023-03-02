@@ -129,7 +129,9 @@ public class BoardController {
 			HttpServletResponse response) {
 		//세션에 있는 회원 정보 가져옴. 작성자와 아이디가 같은지 확인하려고
 		MemberVO user = (MemberVO)session.getAttribute("user");
+		ArrayList<FileVO> files = boardService.getFileList(bo_num);
 		BoardVO board = boardService.getBoardByWriteAuthority(bo_num, user);
+		
 		if(board == null) {
 			MessageUtils.alertAndMovePage(response, 
 					"작성자가 아니거나 존재하지 않은 게시글입니다.", "/spring", "/board/list");
@@ -139,6 +141,7 @@ public class BoardController {
 			ArrayList<BoardTypeVO> btList = 
 					boardService.getBoardType(user.getMe_authority());
 			mv.addObject("btList", btList);
+			mv.addObject("files", files);
 			//작성할 타입이 없으면 작성 페이지로 갈 필요가 없어서 
 			//게시글 리스트로 이동시킴
 			if(btList.size() == 0) {
@@ -147,6 +150,7 @@ public class BoardController {
 						"/board/list");
 			}else
 				mv.setViewName("/board/update");
+			
 		}
 		return mv;
 	}
