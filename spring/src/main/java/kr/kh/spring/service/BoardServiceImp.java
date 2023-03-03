@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import kr.kh.spring.dao.BoardDAO;
+import kr.kh.spring.pagination.Criteria;
+import kr.kh.spring.pagination.PageMaker;
 import kr.kh.spring.utils.UploadFileUtils;
 import kr.kh.spring.vo.BoardTypeVO;
 import kr.kh.spring.vo.BoardVO;
@@ -21,6 +23,8 @@ public class BoardServiceImp implements BoardService {
 	BoardDAO boardDao;
 	
 	String uploadPath = "D:\\uploadfiles";
+	
+
 
 	private boolean checkBoard(BoardVO board) {
 		//게시글이 없거나, 게시글 제목이 비어있거나, 내용이 비어있으면
@@ -100,8 +104,10 @@ public class BoardServiceImp implements BoardService {
 	
 
 	@Override
-	public ArrayList<BoardVO> getBoardList() {
-		return boardDao.selectBoardList();
+	public ArrayList<BoardVO> getBoardList(Criteria cri) {
+		if(cri==null) cri = new Criteria();
+		
+		return boardDao.selectBoardList(cri);
 	}
 
 	@Override
@@ -239,4 +245,11 @@ public class BoardServiceImp implements BoardService {
 	public void updateBoardByLikes(int bo_num) {
 		boardDao.updateBoardByLikes(bo_num);
 	}
+
+	@Override
+	public int getBoardTotalCount(Criteria cri) {
+		return boardDao.selectBoardTotalCount(cri);
+	}
+
+
 }
