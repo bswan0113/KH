@@ -20,6 +20,16 @@
 #image>div>div{
 	float:left;
 }
+
+#image .btn-times{
+position: absolute;
+top:0; right:0; width :30px; height : 30px; background : white; 
+border : 1px solid #dae1e6; text-align:center; line-height: 25px; font-size :25px;
+border-radius : 10px; cursor: pointer;}
+#image .btn-times:hover{
+background: #dae1e6;
+border: 1px solid black;
+}
 </style>
 <div class="container">
 	<h1>게시글 수정</h1>
@@ -59,10 +69,11 @@
 				<label>이미지:</label>
 				<div class="form-group mt-3">
 					<c:forEach items="${files}" var="file">
-					<div>
+					<div style="position :relative">
 						<div class="file-box" style="display:none;">+</div>
 						<input type="file" class="form-control" name="files" accept="image/*" onchange="readURL(this);">
 						<img class="preview" height="200" width="auto" src="<c:url value='/download${file.fi_name}'></c:url>">
+						<span class="btn-times" data-num="${file.fi_num }"> X</span>
 					</div>
 					</c:forEach>
 					<c:forEach begin="1" end="${3 - files.size()}">
@@ -110,8 +121,22 @@ $('form').submit(function(){
 		return false;
 	}
 	let bo_content = $('[name=bo_content]').val();
-	if(bo_content.trim().length  == 0){
+	if(bo_content.trim().length  == 0  && common.indexOf($('#type').val())>=0 ){
 		alert('내용을 입력하세요.');
+		return false;
+	}
+	if(common.indexOf($('#type').val()) < 0){
+		let images = image.querySelectorAll('[type=file]');
+		for(i =0; i< images.length; i++){
+			if(images[i].files && images[i].files[0]) return true;
+		}
+		let imgCount = '${files.size()}';
+			
+		let deleteImageCount = image.querySelectorAll('[name=fileNums]').length;
+		
+		if(imgCount - deleteImageCount != 0) return true;
+		
+		alert('이미지를 1개 이상 첨부해라묭 :)');
 		return false;
 	}
 });
@@ -127,7 +152,7 @@ if(common.includes('${board.bo_bt_num}'))
 else
 	$('#image').show();
 $('#content').summernote('code','${board.bo_content}');
-$('.btn-times').click(function(e){
+$('#common .btn-times').click(function(e){
 	e.preventDefault();
 	$('.files').append('<input type="file" class="form-control" name="files">');
 	$('.files').append('<input type="hidden" name="fileNums" value="'+$(this).data('num')+'">');
@@ -152,4 +177,13 @@ function readURL(input){
 	reader.readAsDataURL(input.files[0]);
 }
 let t;
+
+$('#image .btn-times').click(function(){
+$(this).siblings('.preview').attr('src','');
+$(this).siblings('.file-box').show();
+$(this).parent().detach().appendTo('#image>div');
+$(this).after('<input type="hidden" name="fileNums" value="'+$(this).data('num')+'">');	
+$(this).remove();
+})
+
 </script>
