@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.apache.ibatis.annotations.Param;
 
 import kr.kh.test.vo.BoardTypeVO;
+import kr.kh.test.vo.BoardVO;
 
 public interface BoardDAO {
 
@@ -18,5 +19,7 @@ public interface BoardDAO {
 	int updateBoardType(@Param("bt")BoardTypeVO bt);
 
 	int deleteBoardType(@Param("bt_num")int bt_num);
+
+	int insertBoard(@Param("bo")BoardVO board);
 
 }

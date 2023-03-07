@@ -24,6 +24,10 @@
 			      	<form action="<c:url value='/logout'></c:url>" method="post">
 			        	<button class="nav-link" href="#" style="background : transparent; border :0;">로그아웃</button>
 			      	</form>
+		      	<li class="nav-item">
+			      	<form action="<c:url value='/board/insert'></c:url>" method="get">
+			        	<button class="nav-link" href="#" style="background : transparent; border :0;">글쓰기</button>
+			      	</form>
 		      	</li>    
 		      	</c:if>
 		      	<li class="nav-item">
